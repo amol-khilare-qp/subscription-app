@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: subscription-upgrade
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/questionpro_email
+    username: emaildev
+    password: emaildevpw
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: update
+
+payment:
+  gateway:
+    url: "https://payment.gateway.com/api/pay"
+
+access.control.allow.origin: http://localhost:8080
