@@ -15,16 +15,12 @@ import lombok.extern.slf4j.Slf4j;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	// Handle validation exceptions (from @Valid)
 	@ExceptionHandler(MethodArgumentNotValidException.class)
 	public ResponseEntity<BaseResponse<String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-		// Collect all validation errors
 		StringBuilder errorMessage = new StringBuilder("Validation failed for the following fields: ");
 		for (FieldError error : ex.getBindingResult().getFieldErrors()) {
 			errorMessage.append(error.getField()).append(" - ").append(error.getDefaultMessage()).append("; ");
 		}
-
-		// Create and return the response
 		BaseResponse<String> errorResponse = new BaseResponse<>();
 		errorResponse.setStatus("FAILURE");
 		errorResponse.setMessage(errorMessage.toString());
@@ -33,7 +29,6 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
 	}
 
-	// Handle SubscriptionNotFoundException
 	@ExceptionHandler(SubscriptionNotFoundException.class)
 	public ResponseEntity<BaseResponse<String>> handleSubscriptionNotFoundException(SubscriptionNotFoundException ex) {
 		log.error("Subscription error: {}", ex.getMessage());
@@ -45,7 +40,6 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
 	}
 
-	// Handle UserNotFoundException
 	@ExceptionHandler(UserNotFoundException.class)
 	public ResponseEntity<BaseResponse<String>> handleUserNotFoundException(UserNotFoundException ex) {
 		log.error("User error: {}", ex.getMessage());
@@ -57,7 +51,6 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
 	}
 
-	// Handle generic exception (for other unhandled cases)
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<BaseResponse<String>> handleGenericException(Exception ex) {
 		log.error("An error occurred: {}", ex.getMessage());
@@ -69,7 +62,6 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(errorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
 
-	// Handle PaymentFailedException
 	@ExceptionHandler(PaymentFailedException.class)
 	public ResponseEntity<BaseResponse<String>> handlePaymentFailedException(PaymentFailedException ex) {
 		log.error("Payment error: {}", ex.getMessage());

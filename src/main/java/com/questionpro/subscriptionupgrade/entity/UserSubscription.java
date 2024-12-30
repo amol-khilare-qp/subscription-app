@@ -2,6 +2,7 @@ package com.questionpro.subscriptionupgrade.entity;
 
 import java.time.LocalDateTime;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -33,4 +34,6 @@ public class UserSubscription {
 	private LocalDateTime subscriptionStartDate;
 	private LocalDateTime subscriptionEndDate;
 
+	@Column(nullable = false)
+	private boolean isActive; 
 }

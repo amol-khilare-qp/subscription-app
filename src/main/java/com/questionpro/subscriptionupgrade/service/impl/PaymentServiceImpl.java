@@ -2,7 +2,6 @@ package com.questionpro.subscriptionupgrade.service.impl;
 
 import java.time.LocalDateTime;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import com.questionpro.subscriptionupgrade.client.ApigatewayClient;
@@ -11,7 +10,6 @@ import com.questionpro.subscriptionupgrade.dto.PaymentResponse;
 import com.questionpro.subscriptionupgrade.entity.Subscription;
 import com.questionpro.subscriptionupgrade.entity.User;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
-import com.questionpro.subscriptionupgrade.exception.PaymentFailedException;
 import com.questionpro.subscriptionupgrade.exception.SubscriptionNotFoundException;
 import com.questionpro.subscriptionupgrade.exception.UserNotFoundException;
 import com.questionpro.subscriptionupgrade.repository.SubscriptionRepository;
@@ -28,15 +26,14 @@ public class PaymentServiceImpl implements PaymentService {
 	private final SubscriptionRepository subscriptionRepository;
 	private final UserRepository userRepository;
 	private final UserSubscriptionRepository userSubscriptionRepository;
-
-	@Autowired
-	ApigatewayClient apigatewayClient;
+	private final ApigatewayClient apigatewayClient;
 
 	public PaymentServiceImpl(SubscriptionRepository subscriptionRepository, UserRepository userRepository,
-			UserSubscriptionRepository userSubscriptionRepository) {
+			UserSubscriptionRepository userSubscriptionRepository, ApigatewayClient apigatewayClient) {
 		this.subscriptionRepository = subscriptionRepository;
 		this.userRepository = userRepository;
 		this.userSubscriptionRepository = userSubscriptionRepository;
+		this.apigatewayClient = apigatewayClient;
 	}
 
 	@Override
@@ -44,44 +41,36 @@ public class PaymentServiceImpl implements PaymentService {
 		log.info("Processing payment for card number: {} (name: {})", paymentRequest.getCardNumber(),
 				paymentRequest.getName());
 
-		try {
-			Subscription subscription = subscriptionRepository.findById(paymentRequest.getSubscriptionId())
-					.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
+		Subscription subscription = subscriptionRepository.findById(paymentRequest.getSubscriptionId())
+				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
 
-			User user = userRepository.findById(paymentRequest.getUserId())
-					.orElseThrow(() -> new UserNotFoundException("User not found"));
+		User user = userRepository.findById(paymentRequest.getUserId())
+				.orElseThrow(() -> new UserNotFoundException("User not found"));
 
-			if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
-				throw new RuntimeException("User is already subscribed to this subscription.");
-			}
+		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
+			log.error("User is already subscribed to this subscription: {}", paymentRequest.getUserId());
+			throw new RuntimeException("User is already subscribed to this subscription.");
+		}
 
-			// We call here payment gateway third party api
-			PaymentResponse processPayment = apigatewayClient.processPayment(paymentRequest);
-			if (processPayment.getStatus().equalsIgnoreCase("Success")) {
-				log.info("Payment processed successfully for card number: {}", paymentRequest.getCardNumber());
-				return true;
-			}
+		// Call to the payment gateway (third-party API)
+		PaymentResponse paymentResponse = apigatewayClient.processPayment(paymentRequest);
+		if ("success".equalsIgnoreCase(paymentResponse.getStatus())) {
+			log.info("Payment processed successfully for user: {}", paymentRequest.getUserId());
+			return true;
+		} else {
+			log.error("Payment failed for user {}: {}", paymentRequest.getUserId(), paymentResponse.getError());
 			return false;
-
-		} catch (PaymentFailedException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new PaymentFailedException("An error occurred while processing payment.");
 		}
 	}
 
 	private boolean isUserAlreadyActiveSubscriptionPlan(User user, Subscription subscription) {
-
 		UserSubscription existingSubscription = userSubscriptionRepository.findByUserAndSubscription(user,
 				subscription);
-
 		if (existingSubscription != null
 				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
 			log.info("User already has an active subscription.");
 			return true;
 		}
-
 		return false;
 	}
-
 }

@@ -41,30 +41,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
 
-		// Check if the user has an active subscription
-		UserSubscription existingSubscription = userSubscriptionRepository.findByUserAndSubscription(user,
-				subscription);
-		if (existingSubscription != null
-				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
-			// If the subscription is still valid, return existing subscription
-			log.info("User already has an active subscription.");
-			return existingSubscription;
+		// Deactivate the user's current active subscription if it exists
+		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
+		if (existingActiveSubscription != null) {
+			existingActiveSubscription.setActive(false);
+			userSubscriptionRepository.save(existingActiveSubscription); // Save the deactivated subscription
 		}
 
-		// Update existing subscription or create a new one
-		if (existingSubscription != null) {
-			// If there's an existing subscription but it's expired, update it
-			existingSubscription.setSubscriptionStartDate(LocalDateTime.now());
-			existingSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(12));
-			return userSubscriptionRepository.save(existingSubscription);
-		}
-
-		// If no subscription exists, create a new one
+		// Create a new subscription for the user
 		UserSubscription newSubscription = new UserSubscription();
 		newSubscription.setUser(user);
 		newSubscription.setSubscription(subscription);
 		newSubscription.setSubscriptionStartDate(LocalDateTime.now());
 		newSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(12));
+		newSubscription.setActive(true);
 
 		return userSubscriptionRepository.save(newSubscription);
 	}
@@ -74,18 +64,20 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	public UserSubscription addSubscription(Long userId, Long subscriptionId) {
 		log.info("Adding new subscription for user ID: {} with subscription ID: {}", userId, subscriptionId);
 
-		User user = userRepository.findById(userId).orElseThrow(() -> {
-			log.error("User not found with ID: {}", userId);
-			return new UserNotFoundException("User not found with ID: " + userId);
-		});
+		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
+		Subscription subscription = subscriptionRepository.findById(subscriptionId)
+				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
 
-		Subscription subscription = subscriptionRepository.findById(subscriptionId).orElseThrow(() -> {
-			log.error("Subscription not found with ID: {}", subscriptionId);
-			return new SubscriptionNotFoundException("Subscription not found with ID: " + subscriptionId);
-		});
-
+		// Check if the user already has an active subscription
 		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
 			throw new RuntimeException("User is already subscribed to this subscription.");
+		}
+
+		// Deactivate the user's current active subscription if it exists
+		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
+		if (existingActiveSubscription != null) {
+			existingActiveSubscription.setActive(false);
+			userSubscriptionRepository.save(existingActiveSubscription);
 		}
 
 		UserSubscription userSubscription = new UserSubscription();
@@ -93,23 +85,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		userSubscription.setSubscription(subscription);
 		userSubscription.setSubscriptionStartDate(LocalDateTime.now());
 		userSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(12));
+		userSubscription.setActive(true);
 
-		// Save the new subscription association
 		return userSubscriptionRepository.save(userSubscription);
 	}
 
 	private boolean isUserAlreadyActiveSubscriptionPlan(User user, Subscription subscription) {
+		UserSubscription existingSubscription = userSubscriptionRepository
+				.findActiveSubscriptionByUserAndSubscription(user, subscription);
 
-		UserSubscription existingSubscription = userSubscriptionRepository.findByUserAndSubscription(user,
-				subscription);
-
-		if (existingSubscription != null
-				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
-			log.info("User already has an active subscription.");
-			return true;
-		}
-
-		return false;
+		return existingSubscription != null
+				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now());
 	}
 
 }
