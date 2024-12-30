@@ -23,7 +23,6 @@ public class SubscriptionHelperService {
 
 	@Transactional
 	public int deactivateExpiredSubscriptions() {
-		// Find all active subscriptions that have expired
 		List<UserSubscription> expiredSubscriptions = userSubscriptionRepository
 				.findExpiredActiveSubscriptions(LocalDateTime.now());
 

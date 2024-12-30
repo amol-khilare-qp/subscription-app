@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.questionpro.subscriptionupgrade.entity.Subscription;
 import com.questionpro.subscriptionupgrade.entity.User;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
+import com.questionpro.subscriptionupgrade.exception.ActiveSubscriptionException;
 import com.questionpro.subscriptionupgrade.exception.SubscriptionNotFoundException;
 import com.questionpro.subscriptionupgrade.exception.UserNotFoundException;
 import com.questionpro.subscriptionupgrade.repository.SubscriptionRepository;
@@ -34,17 +35,72 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 	@Override
 	@Transactional
-	public UserSubscription upgradeSubscription(Long subscriptionId, Long userId) {
-		Subscription subscription = subscriptionRepository.findById(subscriptionId)
-				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
+	public UserSubscription addOrRenewSubscription(Long userId, Long subscriptionId) {
+		log.info("Processing subscription addition/renewal for user ID: {} with subscription ID: {}", userId,
+				subscriptionId);
 
-		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+		Subscription subscription = subscriptionRepository.findById(subscriptionId).orElseThrow(
+				() -> new SubscriptionNotFoundException("Subscription not found with ID: " + subscriptionId));
 
 		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
+
 		if (existingActiveSubscription != null) {
-			existingActiveSubscription.setActive(false);
-			userSubscriptionRepository.save(existingActiveSubscription);
+			if (existingActiveSubscription.getSubscription().equals(subscription)) {
+				log.info("Renewing existing subscription for user ID: {}", userId);
+				return renewSubscription(existingActiveSubscription);
+			} else {
+				throw new ActiveSubscriptionException("User with ID: " + userId
+						+ " already has an active subscription with a different plan. Please use the upgrade option.");
+			}
 		}
+
+		return createNewSubscription(user, subscription);
+	}
+
+	@Override
+	@Transactional
+	public UserSubscription upgradeSubscription(Long userId, Long newSubscriptionId) {
+		log.info("Processing subscription upgrade for user ID: {} to new subscription ID: {}", userId,
+				newSubscriptionId);
+
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+		Subscription newSubscription = subscriptionRepository.findById(newSubscriptionId).orElseThrow(
+				() -> new SubscriptionNotFoundException("Subscription not found with ID: " + newSubscriptionId));
+
+		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
+
+		if (existingActiveSubscription == null) {
+			throw new ActiveSubscriptionException(
+					"User with ID: " + userId + " has no active subscription to upgrade.");
+		}
+
+		if (existingActiveSubscription.getSubscription().equals(newSubscription)) {
+			throw new ActiveSubscriptionException(
+					"User with ID: " + userId + " is already subscribed to the same plan.");
+		}
+
+		existingActiveSubscription.setActive(false);
+		userSubscriptionRepository.save(existingActiveSubscription);
+
+		return createNewSubscription(user, newSubscription);
+	}
+
+	private UserSubscription renewSubscription(UserSubscription existingSubscription) {
+		log.info("Renewing subscription ID: {} for user ID: {}", existingSubscription.getId(),
+				existingSubscription.getUser().getUserId());
+
+		existingSubscription.setSubscriptionEndDate(existingSubscription.getSubscriptionEndDate().plusMonths(12));
+		return userSubscriptionRepository.save(existingSubscription);
+	}
+
+	private UserSubscription createNewSubscription(User user, Subscription subscription) {
+		log.info("Creating new subscription for user ID: {} with subscription ID: {}", user.getUserId(),
+				subscription.getSubscriptionId());
 
 		UserSubscription newSubscription = new UserSubscription();
 		newSubscription.setUser(user);
@@ -55,42 +111,4 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 		return userSubscriptionRepository.save(newSubscription);
 	}
-
-	@Override
-	@Transactional
-	public UserSubscription addSubscription(Long userId, Long subscriptionId) {
-		log.info("Adding new subscription for user ID: {} with subscription ID: {}", userId, subscriptionId);
-
-		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
-		Subscription subscription = subscriptionRepository.findById(subscriptionId)
-				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
-
-		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
-			throw new RuntimeException("User is already subscribed to this subscription.");
-		}
-
-		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
-		if (existingActiveSubscription != null) {
-			existingActiveSubscription.setActive(false);
-			userSubscriptionRepository.save(existingActiveSubscription);
-		}
-
-		UserSubscription userSubscription = new UserSubscription();
-		userSubscription.setUser(user);
-		userSubscription.setSubscription(subscription);
-		userSubscription.setSubscriptionStartDate(LocalDateTime.now());
-		userSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(12));
-		userSubscription.setActive(true);
-
-		return userSubscriptionRepository.save(userSubscription);
-	}
-
-	private boolean isUserAlreadyActiveSubscriptionPlan(User user, Subscription subscription) {
-		UserSubscription existingSubscription = userSubscriptionRepository
-				.findActiveSubscriptionByUserAndSubscription(user, subscription);
-
-		return existingSubscription != null
-				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now());
-	}
-
 }

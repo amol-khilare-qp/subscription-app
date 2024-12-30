@@ -60,7 +60,7 @@ public class SubscriptionController {
 			throw new PaymentFailedException("Payment failed. Please try again later.");
 		}
 
-		UserSubscription newSubscription = subscriptionService.addSubscription(paymentRequest.getUserId(),
+		UserSubscription newSubscription = subscriptionService.addOrRenewSubscription(paymentRequest.getUserId(),
 				paymentRequest.getSubscriptionId());
 
 		BaseResponse<String> successResponse = new BaseResponse<>();

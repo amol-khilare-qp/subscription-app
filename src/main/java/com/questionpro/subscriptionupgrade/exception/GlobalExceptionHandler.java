@@ -51,6 +51,17 @@ public class GlobalExceptionHandler {
 		return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
 	}
 
+	@ExceptionHandler(ActiveSubscriptionException.class)
+	public ResponseEntity<BaseResponse<String>> handleActiveSubscriptionException(ActiveSubscriptionException ex) {
+		log.error("Active subscription error: {}", ex.getMessage());
+		BaseResponse<String> errorResponse = new BaseResponse<>();
+		errorResponse.setStatus("FAILURE");
+		errorResponse.setMessage(ex.getMessage());
+		errorResponse.setReasonCode("ACTIVE_SUBSCRIPTION_EXISTS");
+
+		return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+	}
+
 	@ExceptionHandler(Exception.class)
 	public ResponseEntity<BaseResponse<String>> handleGenericException(Exception ex) {
 		log.error("An error occurred: {}", ex.getMessage());
