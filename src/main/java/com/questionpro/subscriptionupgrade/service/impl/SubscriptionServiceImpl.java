@@ -35,20 +35,17 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	@Override
 	@Transactional
 	public UserSubscription upgradeSubscription(Long subscriptionId, Long userId) {
-		// Fetch subscription and user
 		Subscription subscription = subscriptionRepository.findById(subscriptionId)
 				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
 
 		User user = userRepository.findById(userId).orElseThrow(() -> new UserNotFoundException("User not found"));
 
-		// Deactivate the user's current active subscription if it exists
 		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
 		if (existingActiveSubscription != null) {
 			existingActiveSubscription.setActive(false);
-			userSubscriptionRepository.save(existingActiveSubscription); // Save the deactivated subscription
+			userSubscriptionRepository.save(existingActiveSubscription);
 		}
 
-		// Create a new subscription for the user
 		UserSubscription newSubscription = new UserSubscription();
 		newSubscription.setUser(user);
 		newSubscription.setSubscription(subscription);
@@ -68,12 +65,10 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		Subscription subscription = subscriptionRepository.findById(subscriptionId)
 				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
 
-		// Check if the user already has an active subscription
 		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
 			throw new RuntimeException("User is already subscribed to this subscription.");
 		}
 
-		// Deactivate the user's current active subscription if it exists
 		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
 		if (existingActiveSubscription != null) {
 			existingActiveSubscription.setActive(false);

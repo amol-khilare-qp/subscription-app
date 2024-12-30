@@ -13,11 +13,9 @@ import com.questionpro.subscriptionupgrade.entity.UserSubscription;
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
 	UserSubscription findByUserAndSubscription(User user, Subscription subscription);
 
-	// Fetch active subscription for a given user
 	@Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.isActive = true")
 	UserSubscription findActiveSubscriptionByUser(User user);
 
-	// Fetch active subscription for a given user and subscription
 	@Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.subscription = :subscription AND us.isActive = true")
 	UserSubscription findActiveSubscriptionByUserAndSubscription(User user, Subscription subscription);
 
