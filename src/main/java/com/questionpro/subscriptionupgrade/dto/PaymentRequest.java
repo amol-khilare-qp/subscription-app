@@ -38,4 +38,7 @@ public class PaymentRequest {
 	@NotNull(message = "User ID is required.")
 	private Long userId;
 
+	@NotNull(message = "Amount is required.")
+	private Long amount;
+
 }

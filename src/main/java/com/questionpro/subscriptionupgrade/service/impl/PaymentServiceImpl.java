@@ -42,17 +42,6 @@ public class PaymentServiceImpl implements PaymentService {
 		log.info("Processing payment for card number: {} (name: {})", paymentRequest.getCardNumber(),
 				paymentRequest.getName());
 
-		Subscription subscription = subscriptionRepository.findById(paymentRequest.getSubscriptionId())
-				.orElseThrow(() -> new SubscriptionNotFoundException("Subscription not found"));
-
-		User user = userRepository.findById(paymentRequest.getUserId())
-				.orElseThrow(() -> new UserNotFoundException("User not found"));
-
-		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
-			log.error("User is already subscribed to this subscription: {}", paymentRequest.getUserId());
-			throw new ActiveSubscriptionException("User is already subscribed to this subscription.");
-		}
-
 		// Call to the payment gateway (third-party API)
 //		PaymentResponse paymentResponse = apigatewayClient.processPayment(paymentRequest);
 //		if ("success".equalsIgnoreCase(paymentResponse.getStatus())) {
@@ -65,14 +54,4 @@ public class PaymentServiceImpl implements PaymentService {
 		return true;
 	}
 
-	private boolean isUserAlreadyActiveSubscriptionPlan(User user, Subscription subscription) {
-		UserSubscription existingSubscription = userSubscriptionRepository.findByUserAndSubscription(user,
-				subscription);
-		if (existingSubscription != null
-				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
-			log.info("User already has an active subscription.");
-			return true;
-		}
-		return false;
-	}
 }

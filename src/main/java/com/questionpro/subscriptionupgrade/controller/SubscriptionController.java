@@ -9,8 +9,6 @@ import org.springframework.web.bind.annotation.RestController;
 import com.questionpro.subscriptionupgrade.dto.BaseResponse;
 import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
-import com.questionpro.subscriptionupgrade.exception.PaymentFailedException;
-import com.questionpro.subscriptionupgrade.service.PaymentService;
 import com.questionpro.subscriptionupgrade.service.SubscriptionService;
 
 import jakarta.validation.Valid;
@@ -21,11 +19,9 @@ import lombok.extern.slf4j.Slf4j;
 @RequestMapping("/api/subscriptions")
 public class SubscriptionController {
 
-	private final PaymentService paymentService;
 	private final SubscriptionService subscriptionService;
 
-	public SubscriptionController(PaymentService paymentService, SubscriptionService subscriptionService) {
-		this.paymentService = paymentService;
+	public SubscriptionController(SubscriptionService subscriptionService) {
 		this.subscriptionService = subscriptionService;
 	}
 
@@ -33,15 +29,7 @@ public class SubscriptionController {
 	public ResponseEntity<BaseResponse<String>> upgradeSubscription(@Valid @RequestBody PaymentRequest paymentRequest) {
 		log.info("Received request to upgrade subscription for user ID: {}", paymentRequest.getUserId());
 
-		// Step 1: Validate and process payment
-		boolean paymentSuccess = paymentService.processPayment(paymentRequest);
-
-		if (!paymentSuccess) {
-			throw new PaymentFailedException("Payment failed. Please try again later.");
-		}
-
-		UserSubscription updatedSubscription = subscriptionService
-				.upgradeSubscription(paymentRequest.getSubscriptionId(), paymentRequest.getUserId());
+		UserSubscription updatedSubscription = subscriptionService.upgradeSubscription(paymentRequest);
 
 		BaseResponse<String> successResponse = new BaseResponse<>();
 		successResponse.setStatus("SUCCESS");
@@ -54,14 +42,7 @@ public class SubscriptionController {
 	public ResponseEntity<BaseResponse<String>> addSubscription(@Valid @RequestBody PaymentRequest paymentRequest) {
 		log.info("Received request to add subscription for user ID: {}", paymentRequest.getUserId());
 
-		boolean paymentSuccess = paymentService.processPayment(paymentRequest);
-
-		if (!paymentSuccess) {
-			throw new PaymentFailedException("Payment failed. Please try again later.");
-		}
-
-		UserSubscription newSubscription = subscriptionService.addOrRenewSubscription(paymentRequest.getUserId(),
-				paymentRequest.getSubscriptionId());
+		UserSubscription newSubscription = subscriptionService.addOrRenewSubscription(paymentRequest);
 
 		BaseResponse<String> successResponse = new BaseResponse<>();
 		successResponse.setStatus("SUCCESS");
