@@ -11,7 +11,7 @@ import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
 import com.questionpro.subscriptionupgrade.dto.PaymentResponse;
 
 @Component
-public class ApigatewayClient {
+public class PaymentGatewayClient {
 
 	@Value("${payment.gateway.url}")
 	private String paymentGatewayUrl;

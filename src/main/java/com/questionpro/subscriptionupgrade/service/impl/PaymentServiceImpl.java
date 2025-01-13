@@ -4,7 +4,7 @@ import java.time.LocalDateTime;
 
 import org.springframework.stereotype.Service;
 
-import com.questionpro.subscriptionupgrade.client.ApigatewayClient;
+import com.questionpro.subscriptionupgrade.client.PaymentGatewayClient;
 import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
 import com.questionpro.subscriptionupgrade.dto.PaymentResponse;
 import com.questionpro.subscriptionupgrade.entity.Subscription;
@@ -27,10 +27,10 @@ public class PaymentServiceImpl implements PaymentService {
 	private final SubscriptionRepository subscriptionRepository;
 	private final UserRepository userRepository;
 	private final UserSubscriptionRepository userSubscriptionRepository;
-	private final ApigatewayClient apigatewayClient;
+	private final PaymentGatewayClient apigatewayClient;
 
 	public PaymentServiceImpl(SubscriptionRepository subscriptionRepository, UserRepository userRepository,
-			UserSubscriptionRepository userSubscriptionRepository, ApigatewayClient apigatewayClient) {
+			UserSubscriptionRepository userSubscriptionRepository, PaymentGatewayClient apigatewayClient) {
 		this.subscriptionRepository = subscriptionRepository;
 		this.userRepository = userRepository;
 		this.userSubscriptionRepository = userSubscriptionRepository;
