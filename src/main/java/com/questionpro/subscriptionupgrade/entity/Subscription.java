@@ -24,7 +24,7 @@ public class Subscription {
 	private String name;
 	private String description;
 	private Double price;
-
+	private Integer subscriptionDuration;
 	@OneToMany(mappedBy = "subscription")
 	private Set<UserSubscription> userSubscriptions;
 

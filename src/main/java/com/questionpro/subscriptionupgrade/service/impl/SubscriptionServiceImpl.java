@@ -25,8 +25,6 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class SubscriptionServiceImpl implements SubscriptionService {
 
-	private static final int SUBSCRIPTION_DURATION_MONTHS = 12;
-
 	private final SubscriptionRepository subscriptionRepository;
 	private final UserRepository userRepository;
 	private final UserSubscriptionRepository userSubscriptionRepository;
@@ -71,7 +69,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		if (existingActiveSubscription != null) {
 			if (existingActiveSubscription.getSubscription().equals(subscription)) {
 				log.info("Renewing existing subscription for user ID: {}", paymentRequest.getUserId());
-				return renewSubscription(existingActiveSubscription);
+				return renewSubscription(existingActiveSubscription, subscription);
 			} else {
 				log.warn("User with ID: {} already has an active subscription with a different plan.",
 						paymentRequest.getUserId());
@@ -129,12 +127,12 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		return createNewSubscription(user, subscription);
 	}
 
-	private UserSubscription renewSubscription(UserSubscription existingSubscription) {
+	private UserSubscription renewSubscription(UserSubscription existingSubscription, Subscription subscription) {
 		log.info("Renewing subscription ID: {} for user ID: {}", existingSubscription.getId(),
 				existingSubscription.getUser().getUserId());
 
 		existingSubscription.setSubscriptionEndDate(
-				existingSubscription.getSubscriptionEndDate().plusMonths(SUBSCRIPTION_DURATION_MONTHS));
+				existingSubscription.getSubscriptionEndDate().plusMonths(subscription.getSubscriptionDuration()));
 		return userSubscriptionRepository.save(existingSubscription);
 	}
 
@@ -146,7 +144,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 		newSubscription.setUser(user);
 		newSubscription.setSubscription(subscription);
 		newSubscription.setSubscriptionStartDate(LocalDateTime.now());
-		newSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(SUBSCRIPTION_DURATION_MONTHS));
+		newSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(subscription.getSubscriptionDuration()));
 		newSubscription.setActive(true);
 
 		return userSubscriptionRepository.save(newSubscription);
