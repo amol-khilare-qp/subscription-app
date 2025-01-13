@@ -157,7 +157,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 				subscription);
 		if (existingSubscription != null
 				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
-			log.info("User already has an active subscription.");
 			return true;
 		}
 		return false;
