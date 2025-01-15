@@ -5,7 +5,7 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
+import com.questionpro.subscriptionupgrade.dto.PaymentRequestDto;
 import com.questionpro.subscriptionupgrade.entity.Subscription;
 import com.questionpro.subscriptionupgrade.entity.User;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
@@ -40,7 +40,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 	@Override
 	@Transactional
-	public UserSubscription addOrRenewSubscription(PaymentRequest paymentRequest) {
+	public UserSubscription addOrRenewSubscription(PaymentRequestDto paymentRequest) {
 		log.info("Processing subscription addition/renewal for user ID: {} with subscription ID: {}, at {}",
 				paymentRequest.getUserId(), paymentRequest.getSubscriptionId(), LocalDateTime.now());
 
@@ -83,7 +83,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 	@Override
 	@Transactional
-	public UserSubscription upgradeSubscription(PaymentRequest paymentRequest) {
+	public UserSubscription upgradeSubscription(PaymentRequestDto paymentRequest) {
 		log.info("Processing subscription upgrade for user ID: {} to new subscription ID: {}, at {}",
 				paymentRequest.getUserId(), paymentRequest.getSubscriptionId(), LocalDateTime.now());
 

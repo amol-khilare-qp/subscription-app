@@ -7,8 +7,8 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
-import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
-import com.questionpro.subscriptionupgrade.dto.PaymentResponse;
+import com.questionpro.subscriptionupgrade.dto.PaymentRequestDto;
+import com.questionpro.subscriptionupgrade.dto.PaymentResponseDto;
 
 @Component
 public class PaymentGatewayClient {
@@ -19,14 +19,14 @@ public class PaymentGatewayClient {
 	@Autowired
 	private RestTemplate restTemplate;
 
-	public PaymentResponse processPayment(PaymentRequest paymentRequest) {
+	public PaymentResponseDto processPayment(PaymentRequestDto paymentRequest) {
 
 		HttpHeaders headers = new HttpHeaders();
 		headers.set("Content-Type", "application/json");
 
-		HttpEntity<PaymentRequest> entity = new HttpEntity<>(paymentRequest, headers);
+		HttpEntity<PaymentRequestDto> entity = new HttpEntity<>(paymentRequest, headers);
 		// Temporarily returning dummy response
-		return new PaymentResponse("success", "123456", "");
+		return new PaymentResponseDto("success", "123456", "");
 
 //		ResponseEntity<PaymentResponse> response = restTemplate.exchange(paymentGatewayUrl, HttpMethod.POST, entity,
 //				PaymentResponse.class);

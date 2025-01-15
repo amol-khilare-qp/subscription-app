@@ -5,8 +5,8 @@ import java.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import com.questionpro.subscriptionupgrade.client.PaymentGatewayClient;
-import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
-import com.questionpro.subscriptionupgrade.dto.PaymentResponse;
+import com.questionpro.subscriptionupgrade.dto.PaymentRequestDto;
+import com.questionpro.subscriptionupgrade.dto.PaymentResponseDto;
 import com.questionpro.subscriptionupgrade.entity.Subscription;
 import com.questionpro.subscriptionupgrade.entity.User;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
@@ -38,7 +38,7 @@ public class PaymentServiceImpl implements PaymentService {
 	}
 
 	@Override
-	public boolean processPayment(PaymentRequest paymentRequest) {
+	public boolean processPayment(PaymentRequestDto paymentRequest) {
 		log.info("Processing payment for card number: {} (name: {})", paymentRequest.getCardNumber(),
 				paymentRequest.getName());
 

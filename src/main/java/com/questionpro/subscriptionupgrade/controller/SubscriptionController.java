@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.questionpro.subscriptionupgrade.dto.BaseResponse;
-import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
+import com.questionpro.subscriptionupgrade.dto.PaymentRequestDto;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
 import com.questionpro.subscriptionupgrade.service.SubscriptionService;
 
@@ -26,7 +26,7 @@ public class SubscriptionController {
 	}
 
 	@PostMapping("/upgrade")
-	public ResponseEntity<BaseResponse<String>> upgradeSubscription(@Valid @RequestBody PaymentRequest paymentRequest) {
+	public ResponseEntity<BaseResponse<String>> upgradeSubscription(@Valid @RequestBody PaymentRequestDto paymentRequest) {
 		log.info("Received request to upgrade subscription for user ID: {}", paymentRequest.getUserId());
 
 		UserSubscription updatedSubscription = subscriptionService.upgradeSubscription(paymentRequest);
@@ -39,7 +39,7 @@ public class SubscriptionController {
 	}
 
 	@PostMapping("/add")
-	public ResponseEntity<BaseResponse<String>> addSubscription(@Valid @RequestBody PaymentRequest paymentRequest) {
+	public ResponseEntity<BaseResponse<String>> addSubscription(@Valid @RequestBody PaymentRequestDto paymentRequest) {
 		log.info("Received request to add subscription for user ID: {}", paymentRequest.getUserId());
 
 		UserSubscription newSubscription = subscriptionService.addOrRenewSubscription(paymentRequest);

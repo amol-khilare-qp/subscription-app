@@ -1,9 +1,9 @@
 package com.questionpro.subscriptionupgrade.service;
 
-import com.questionpro.subscriptionupgrade.dto.PaymentRequest;
+import com.questionpro.subscriptionupgrade.dto.PaymentRequestDto;
 
 public interface PaymentService {
 
-	boolean processPayment(PaymentRequest paymentRequest);
+	boolean processPayment(PaymentRequestDto paymentRequest);
 
 }

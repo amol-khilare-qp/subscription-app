@@ -13,7 +13,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class PaymentRequest {
+public class PaymentRequestDto {
 
 	@NotNull(message = "Subscription ID is required.")
 	private Long subscriptionId;
