@@ -95,9 +95,6 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 
 	private UserSubscription renewExistingSubscription(UserSubscription existingSubscription,
 			Subscription subscription) {
-		log.info("Renewing subscription ID: {} for user ID: {}", existingSubscription.getId(),
-				existingSubscription.getUser().getUserId());
-
 		existingSubscription
 				.setSubscriptionEndDate(existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())
 						? existingSubscription.getSubscriptionEndDate()
