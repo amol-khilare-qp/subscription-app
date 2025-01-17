@@ -40,7 +40,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	public UserSubscription upgradeSubscription(PaymentRequestDto paymentRequest) {
+	public UserSubscription updateSubscription(PaymentRequestDto paymentRequest) {
 		log.info("Processing subscription upgrade for user ID: {} to subscription ID: {}", paymentRequest.getUserId(),
 				paymentRequest.getSubscriptionId());
 

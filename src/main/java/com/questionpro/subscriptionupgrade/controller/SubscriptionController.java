@@ -26,8 +26,8 @@ public class SubscriptionController {
     }
 
     @PostMapping("/update")
-    public ResponseEntity<BaseResponse<String>> upgradeSubscription(@Valid @RequestBody PaymentRequestDto paymentRequestDto) {
-        UserSubscription updatedSubscription = subscriptionService.upgradeSubscription(paymentRequestDto);
+    public ResponseEntity<BaseResponse<String>> updateSubscription(@Valid @RequestBody PaymentRequestDto paymentRequestDto) {
+        UserSubscription updatedSubscription = subscriptionService.updateSubscription(paymentRequestDto);
         String responseMessage = "Subscription upgraded successfully.";
         String responseObject = "Subscription upgraded successfully with ID: " + updatedSubscription.getId();
         return ResponseUtil.createSuccessResponse(responseMessage, responseObject);
