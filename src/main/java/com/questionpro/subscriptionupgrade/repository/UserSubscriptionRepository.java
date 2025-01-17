@@ -13,10 +13,8 @@ import com.questionpro.subscriptionupgrade.entity.User;
 import com.questionpro.subscriptionupgrade.entity.UserSubscription;
 
 public interface UserSubscriptionRepository extends JpaRepository<UserSubscription, Long> {
-	UserSubscription findByUserAndSubscription(User user, Subscription subscription);
-
-	@Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.isActive = true")
-	UserSubscription findActiveSubscriptionByUser(User user);
+	@Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.subscription = :subscription AND us.isActive = true")
+	UserSubscription findActiveByUserAndSubscription(@Param("user") User user, @Param("subscription") Subscription subscription);
 
 	@Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.subscription = :subscription AND us.isActive = true")
 	UserSubscription findActiveSubscriptionByUserAndSubscription(User user, Subscription subscription);
@@ -27,5 +25,12 @@ public interface UserSubscriptionRepository extends JpaRepository<UserSubscripti
 	@Modifying
 	@Query("UPDATE UserSubscription us SET us.isActive = false WHERE us.subscriptionEndDate < :currentDateTime AND us.isActive = true")
 	int deactivateExpiredSubscriptions(@Param("currentDateTime") LocalDateTime currentDateTime);
+	
+    @Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.subscription = :subscription")
+    UserSubscription findByUserAndSubscription(@Param("user") User user, @Param("subscription") Subscription subscription);
+   
+
+    @Query("SELECT us FROM UserSubscription us WHERE us.user = :user AND us.isActive = true")
+    UserSubscription findActiveSubscriptionByUser(@Param("user") User user);
 
 }

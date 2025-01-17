@@ -33,13 +33,6 @@ public class SubscriptionController {
         return ResponseUtil.createSuccessResponse(responseMessage, responseObject);
     }
 
-    @PostMapping("/add")
-    public ResponseEntity<BaseResponse<String>> addSubscription(@Valid @RequestBody PaymentRequestDto paymentRequestDto) {
-        UserSubscription newSubscription = subscriptionService.addOrRenewSubscription(paymentRequestDto);
-        String responseMessage = "Subscription added successfully.";
-        String responseObject = "Subscription added successfully with ID: " + newSubscription.getId();
-        return ResponseUtil.createSuccessResponse(responseMessage, responseObject);
-    }
 
 }
 

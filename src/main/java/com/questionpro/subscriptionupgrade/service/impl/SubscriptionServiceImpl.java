@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 
 @Service
 @Slf4j
+@Transactional
 public class SubscriptionServiceImpl implements SubscriptionService {
 
 	private final SubscriptionRepository subscriptionRepository;
@@ -39,124 +40,71 @@ public class SubscriptionServiceImpl implements SubscriptionService {
 	}
 
 	@Override
-	@Transactional
-	public UserSubscription addOrRenewSubscription(PaymentRequestDto paymentRequest) {
-		log.info("Processing subscription addition/renewal for user ID: {} with subscription ID: {}, at {}",
-				paymentRequest.getUserId(), paymentRequest.getSubscriptionId(), LocalDateTime.now());
-
-		User user = userRepository.findById(paymentRequest.getUserId())
-				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + paymentRequest.getUserId()));
-
-		Subscription subscription = subscriptionRepository.findById(paymentRequest.getSubscriptionId())
-				.orElseThrow(() -> new SubscriptionNotFoundException(
-						"Subscription not found with ID: " + paymentRequest.getSubscriptionId()));
-
-		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
-			log.error("User is already subscribed to this subscription: {}", paymentRequest.getUserId());
-			throw new ActiveSubscriptionException("User is already subscribed to this subscription.");
-		}
-
-		boolean paymentSuccess = paymentService.processPayment(paymentRequest);
-
-		if (!paymentSuccess) {
-			log.error("Payment failed for user ID: {} with subscription ID: {}", paymentRequest.getUserId(),
-					paymentRequest.getSubscriptionId());
-			throw new PaymentFailedException("Payment failed. Please try again later.");
-		}
-
-		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
-
-		if (existingActiveSubscription != null) {
-			if (existingActiveSubscription.getSubscription().equals(subscription)) {
-				log.info("Renewing existing subscription for user ID: {}", paymentRequest.getUserId());
-				return renewSubscription(existingActiveSubscription, subscription);
-			} else {
-				log.warn("User with ID: {} already has an active subscription with a different plan.",
-						paymentRequest.getUserId());
-				throw new ActiveSubscriptionException("User with ID: " + paymentRequest.getUserId()
-						+ " already has an active subscription with a different plan. Please use the upgrade option.");
-			}
-		}
-
-		return createNewSubscription(user, subscription);
-	}
-
-	@Override
-	@Transactional
 	public UserSubscription upgradeSubscription(PaymentRequestDto paymentRequest) {
-		log.info("Processing subscription upgrade for user ID: {} to new subscription ID: {}, at {}",
-				paymentRequest.getUserId(), paymentRequest.getSubscriptionId(), LocalDateTime.now());
+		log.info("Processing subscription upgrade for user ID: {} to subscription ID: {}", paymentRequest.getUserId(),
+				paymentRequest.getSubscriptionId());
 
-		User user = userRepository.findById(paymentRequest.getUserId())
-				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + paymentRequest.getUserId()));
-
-		Subscription subscription = subscriptionRepository.findById(paymentRequest.getSubscriptionId())
-				.orElseThrow(() -> new SubscriptionNotFoundException(
-						"Subscription not found with ID: " + paymentRequest.getSubscriptionId()));
-
-		if (isUserAlreadyActiveSubscriptionPlan(user, subscription)) {
-			log.error("User is already subscribed to this subscription: {}", paymentRequest.getUserId());
-			throw new ActiveSubscriptionException("User is already subscribed to this subscription.");
-		}
-
-		boolean paymentSuccess = paymentService.processPayment(paymentRequest);
-
-		if (!paymentSuccess) {
-			log.error("Payment failed for user ID: {} while upgrading to subscription ID: {}",
-					paymentRequest.getUserId(), paymentRequest.getSubscriptionId());
-			throw new PaymentFailedException("Payment failed. Please try again later.");
-		}
-
-		UserSubscription existingActiveSubscription = userSubscriptionRepository.findActiveSubscriptionByUser(user);
-
-		if (existingActiveSubscription == null) {
-			log.warn("User with ID: {} has no active subscription to upgrade.", paymentRequest.getUserId());
-			throw new ActiveSubscriptionException(
-					"User with ID: " + paymentRequest.getUserId() + " has no active subscription to upgrade.");
-		}
-
-		if (existingActiveSubscription.getSubscription().equals(subscription)) {
-			log.warn("User with ID: {} is already subscribed to the same plan.", paymentRequest.getUserId());
-			throw new ActiveSubscriptionException(
-					"User with ID: " + paymentRequest.getUserId() + " is already subscribed to the same plan.");
-		}
-
-		existingActiveSubscription.setActive(Boolean.FALSE);
-		userSubscriptionRepository.save(existingActiveSubscription);
-
-		return createNewSubscription(user, subscription);
+		User user = findUserById(paymentRequest.getUserId());
+		Subscription subscription = findSubscriptionById(paymentRequest.getSubscriptionId());
+		UserSubscription existingSubscription = findExistingSubscription(user, subscription);
+		validateActiveSubscription(existingSubscription);
+		processPayment(paymentRequest);
+		return handleSubscriptionRenewal(existingSubscription, subscription, user);
 	}
 
-	private UserSubscription renewSubscription(UserSubscription existingSubscription, Subscription subscription) {
+	private User findUserById(Long userId) {
+		return userRepository.findById(userId)
+				.orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+	}
+
+	private Subscription findSubscriptionById(Long subscriptionId) {
+		return subscriptionRepository.findById(subscriptionId).orElseThrow(
+				() -> new SubscriptionNotFoundException("Subscription not found with ID: " + subscriptionId));
+	}
+
+	private UserSubscription findExistingSubscription(User user, Subscription subscription) {
+		return userSubscriptionRepository.findByUserAndSubscription(user, subscription);
+	}
+
+	private void validateActiveSubscription(UserSubscription existingSubscription) {
+		if (existingSubscription != null
+				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
+			log.error("User is already subscribed to this plan.");
+			throw new ActiveSubscriptionException("User is already subscribed to this plan.");
+		}
+	}
+
+	private void processPayment(PaymentRequestDto paymentRequest) {
+		boolean paymentSuccess = paymentService.processPayment(paymentRequest);
+		if (!paymentSuccess) {
+			log.error("Payment failed for user ID: {}", paymentRequest.getUserId());
+			throw new PaymentFailedException("Payment failed. Please try again.");
+		}
+	}
+
+	private UserSubscription handleSubscriptionRenewal(UserSubscription existingSubscription, Subscription subscription,
+			User user) {
+		if (existingSubscription != null) {
+			log.info("Renewing expired subscription for user ID: {}", user.getUserId());
+			return renewExistingSubscription(existingSubscription, subscription);
+		}
+		log.error("No existing subscription found for user ID: {} and subscription ID: {}", user.getUserId(),
+				subscription.getSubscriptionId());
+		throw new SubscriptionNotFoundException("No existing subscription found to update.");
+	}
+
+	private UserSubscription renewExistingSubscription(UserSubscription existingSubscription,
+			Subscription subscription) {
 		log.info("Renewing subscription ID: {} for user ID: {}", existingSubscription.getId(),
 				existingSubscription.getUser().getUserId());
 
-		existingSubscription.setSubscriptionEndDate(
-				existingSubscription.getSubscriptionEndDate().plusMonths(subscription.getSubscriptionDuration()));
+		existingSubscription
+				.setSubscriptionEndDate(existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())
+						? existingSubscription.getSubscriptionEndDate()
+								.plusMonths(subscription.getSubscriptionDuration())
+						: LocalDateTime.now().plusMonths(subscription.getSubscriptionDuration()));
+		existingSubscription.setActive(true);
+
 		return userSubscriptionRepository.save(existingSubscription);
-	}
-
-	private UserSubscription createNewSubscription(User user, Subscription subscription) {
-		log.info("Creating new subscription for user ID: {} with subscription ID: {}", user.getUserId(),
-				subscription.getSubscriptionId());
-
-		UserSubscription newSubscription = new UserSubscription();
-		newSubscription.setUser(user);
-		newSubscription.setSubscription(subscription);
-		newSubscription.setSubscriptionStartDate(LocalDateTime.now());
-		newSubscription.setSubscriptionEndDate(LocalDateTime.now().plusMonths(subscription.getSubscriptionDuration()));
-		newSubscription.setActive(true);
-
-		return userSubscriptionRepository.save(newSubscription);
-	}
-
-	private boolean isUserAlreadyActiveSubscriptionPlan(User user, Subscription subscription) {
-		UserSubscription existingSubscription = userSubscriptionRepository.findByUserAndSubscription(user,
-				subscription);
-		if (existingSubscription != null
-				&& existingSubscription.getSubscriptionEndDate().isAfter(LocalDateTime.now())) {
-			return true;
-		}
-		return false;
 	}
 }

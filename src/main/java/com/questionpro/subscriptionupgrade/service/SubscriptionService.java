@@ -5,6 +5,4 @@ import com.questionpro.subscriptionupgrade.entity.UserSubscription;
 
 public interface SubscriptionService {
 	UserSubscription upgradeSubscription(PaymentRequestDto paymentRequest);
-
-	UserSubscription addOrRenewSubscription(PaymentRequestDto paymentRequest);
 }
